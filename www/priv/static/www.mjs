@@ -2495,7 +2495,7 @@ var Hover = class extends CustomType {
 };
 function default_config() {
   return new PopcicleConfig(
-    '\ndiv[data-popcicle-open] {\n  position: absolute;\n  z-index: 9999;\n  transition: all;\n  transition-duration: 200ms;\n}\n\ndiv[data-popcicle-open="0"] {\n  opacity: 0;\n}\n\ndiv[data-popcicle-open="1"] {\n  opacity: 1;\n}',
+    '\ndiv[data-popcicle-open] {\n  position: absolute;\n}\n\ndiv[data-popcicle-open="0"] {\n  opacity: 0;\n  pointer-events: none;\n}\n\ndiv[data-popcicle-open="1"] {\n  opacity: 1;\n}',
     4,
     -2
   );
@@ -3016,7 +3016,7 @@ function popcicle(child, position, popcicle2, show_on) {
                               throw makeError(
                                 "let_assert",
                                 "popcicle",
-                                212,
+                                216,
                                 "",
                                 "Pattern match failed, no pattern matched the value.",
                                 { value: $ }
