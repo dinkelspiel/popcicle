@@ -37,7 +37,7 @@ Previews can be found on https://popcicle.keii.dev
 
 * [Dropdown Menu](https://github.com/dinkelspiel/popcicle/blob/master/examples/dropdown_menu.gleam)
  
-<img width="500px" src="examples/dropdown_menu.png">
+<img width="500px" src="https://github.com/dinkelspiel/popcicle/blob/master/examples/dropdown_menu.png">
 
 ## Do i have to use Lustre
 
