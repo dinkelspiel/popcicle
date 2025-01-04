@@ -86,6 +86,7 @@ div[data-popcicle-open] {
 
 div[data-popcicle-open=\"0\"] {
   opacity: 0;
+  pointer-events: none;
 }
 
 div[data-popcicle-open=\"1\"] {
