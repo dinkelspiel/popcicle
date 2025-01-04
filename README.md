@@ -1,4 +1,4 @@
-#popcicle
+# popcicle
 
 [![Package Version](https://img.shields.io/hexpm/v/popcicle)](https://hex.pm/packages/popcicle)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/popcicle/)
