@@ -71,7 +71,7 @@ fn get_element_height(elem: pl_element.Element) -> Result(Int, Nil)
 @external(javascript, "./popcicle_ffi.mjs", "isMouseOver")
 fn is_mouse_over(event: pl_event.Event(a), elem: pl_element.Element) -> Bool
 
-@external(javascript, "../../element_ffi.mjs", "contains")
+@external(javascript, "./popcicle_ffi.mjs", "contains")
 pub fn contains(element: pl_element.Element, other: pl_element.Element) -> Bool
 
 @external(javascript, "./popcicle_ffi.mjs", "getFirstParentWithAttrib")
