@@ -1,14 +1,11 @@
 import gleam/bool
 import gleam/dynamic
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/result
-import lustre
-import lustre/attribute.{attribute, class}
-import lustre/effect
-import lustre/element.{type Element, element} as lu_element
-import lustre/element/html.{div, style, text}
+import lustre/attribute.{attribute}
+import lustre/element.{type Element} as _
+import lustre/element/html.{div, style}
 import lustre/event
 import plinth/browser/document
 import plinth/browser/element.{get_attribute, set_attribute} as pl_element
@@ -85,9 +82,6 @@ pub fn default_config() {
     css: "
 div[data-popcicle-open] {
   position: absolute;
-  z-index: 9999;
-  transition: all;
-  transition-duration: 200ms;
 }
 
 div[data-popcicle-open=\"0\"] {
@@ -175,6 +169,15 @@ pub fn initialize(config: PopcicleConfig, cb: fn() -> Element(a)) {
   )
 }
 
+/// A simple popcicle will add the element in the child parameter where the
+/// function is called. Then when that element is pressed (show_on=popcicle.Click) or
+/// hovered (show_on=popcicle.Hover), it will show the popcicle as a popover
+/// positioned by the position parameter. By default the popcicle and it's
+/// button comes completely unstyled and you *can* use it that way however, it
+/// is highly recommened you create your own styled functions. If you don't
+/// want to do that then there is a prestyled component based on shadcn/ui that
+/// you can simply copy into your project: [Dropdown Menu](https://github.com/dinkelspiel/popcicle/blob/master/examples/dropdown_menu.gleam)
+///
 pub fn popcicle(
   child: Element(a),
   position: PrefferedPosition,

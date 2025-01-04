@@ -18,7 +18,7 @@ pub fn dropdown_menu(
       list.flatten([
         [
           class(
-            "p-1 min-w-[8rem] outline-none shadow-md bg-white rounded-md border border-zinc-200 overflow-hidden w-56",
+            "p-1 min-w-[8rem] outline-none shadow-md bg-white rounded-md border border-zinc-200 overflow-hidden w-56 transition-all duration-200",
           ),
         ],
         attributes,

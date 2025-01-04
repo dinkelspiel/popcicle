@@ -3119,7 +3119,7 @@ function dropdown_menu(child, position, attributes, children2, show_on) {
         toList([
           toList([
             class$(
-              "p-1 min-w-[8rem] outline-none shadow-md bg-white rounded-md border border-zinc-200 overflow-hidden w-56"
+              "p-1 min-w-[8rem] outline-none shadow-md bg-white rounded-md border border-zinc-200 overflow-hidden w-56 transition-all duration-200"
             )
           ]),
           attributes
