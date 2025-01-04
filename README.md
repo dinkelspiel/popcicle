@@ -33,7 +33,7 @@ Further documentation can be found at <https://hexdocs.pm/popcicle>.
 
 No, however there are ready-made styles popovers that you can simply copy into your project and use that are based on shadcn/ui:
 
-Previews can be found on https://popcicle.keii.dev
+Previews can be found on [https://popcicle.keii.dev](https://popcicle.keii.dev)
 
 * [Dropdown Menu](https://github.com/dinkelspiel/popcicle/blob/master/examples/dropdown_menu.gleam)
  
