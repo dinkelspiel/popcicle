@@ -1,1 +1,0 @@
--record(effect, {all :: list(fun((lustre@effect:actions(any())) -> nil))}).
