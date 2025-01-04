@@ -31,12 +31,12 @@ Further documentation can be found at <https://hexdocs.pm/popcicle>.
 
 ## Are they styled by default?
 
-No, however there are ready-made popovers that you can simply copy into your project and use that are based on shadcn/ui:
+No, however there are ready-made styles popovers that you can simply copy into your project and use that are based on shadcn/ui:
 
 Previews can be found on https://popcicle.keii.dev
 
-* [Dropdown Menu](https://github.com/dinkelspiel/popcicle/blob/main/examples/dropdown_menu.gleam)
-
+* [Dropdown Menu](https://github.com/dinkelspiel/popcicle/blob/master/examples/dropdown_menu.gleam)
+ 
 <img width="500px" src="examples/dropdown_menu.png">
 
 ## Do i have to use Lustre
