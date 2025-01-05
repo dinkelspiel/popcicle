@@ -81,9 +81,8 @@ pub fn default_config() {
   PopcicleConfig(
     css: "
 div[data-popcicle-open] {
-position: absolute;
-  transition: all;
-  transition-duration: 200ms;
+  position: absolute;
+  transition: opacity 200ms;
 }
 
 div[data-popcicle-open=\"0\"] {
