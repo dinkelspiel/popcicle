@@ -1,12 +1,12 @@
 import gleam/int
+import lucide_lustre
 import lustre
 import lustre/attribute.{class, href}
 import lustre/element.{type Element}
-import lustre/element/html.{button, div, h1, p, text, a, span}
+import lustre/element/html.{a, button, div, h1, p, span, text}
 import lustre/event
 import popcicle
 import popcicle/components/dropdown_menu
-import lucide_lustre
 
 pub fn main() {
   let app = lustre.simple(init, update, view)
@@ -60,8 +60,14 @@ fn view(model: Model) -> Element(Msg) {
       p([class("text-center text-lg mb-3")], [
         text("Simple to use, styleable popovers for "),
         span([], [
-          a([class("text-center underline text-violet-400 cursor-pointer"), href("https://github.com/lustre-labs/lustre")], [text("Lustre")])
-        ])
+          a(
+            [
+              class("text-center underline text-violet-400 cursor-pointer"),
+              href("https://github.com/lustre-labs/lustre"),
+            ],
+            [text("Lustre")],
+          ),
+        ]),
       ]),
       div([class("flex gap-2 justify-center")], [
         dropdown_menu.dropdown_menu(
@@ -121,11 +127,15 @@ fn view(model: Model) -> Element(Msg) {
         ),
         a([href("https://github.com/dinkelspiel/popcicle")], [
           button([class(light_button_styles())], [text("GitHub")]),
-        ])
+        ]),
       ]),
-      a([class("text-center underline text-zinc-400 text-sm cursor-pointer"), href("https://hexdocs.pm/popcicle/")], [
-        text("Documentation")
-      ])
+      a(
+        [
+          class("text-center underline text-zinc-400 text-sm cursor-pointer"),
+          href("https://hexdocs.pm/popcicle/"),
+        ],
+        [text("Documentation")],
+      ),
     ]),
   ])
 }

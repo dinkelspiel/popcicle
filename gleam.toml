@@ -1,5 +1,5 @@
 name = "popcicle"
-version = "1.0.4"
+version = "1.0.5"
 target = "javascript"
 description = "Simple to use, styleable popovers for Lustre"
 licences = ["Apache-2.0"]

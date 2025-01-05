@@ -81,7 +81,7 @@ pub fn default_config() {
   PopcicleConfig(
     css: "
 div[data-popcicle-open] {
-  position: absolute;
+position: absolute;
   transition: all;
   transition-duration: 200ms;
 }
@@ -164,6 +164,7 @@ pub fn initialize(config: PopcicleConfig, cb: fn() -> Element(a)) {
             [
               attribute("data-popcicle-id", int.to_string(popcicle.0)),
               attribute("data-popcicle-open", "0"),
+              attribute("style", "left:0;top:0;"),
             ],
             [popcicle.1],
           )
