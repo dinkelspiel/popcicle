@@ -24,6 +24,7 @@ pub type PrefferedPosition {
   LeftTop
   LeftCenter
   LeftBottom
+  Custom(Int, Int)
 }
 
 pub type PopcicleConfig {
@@ -323,6 +324,10 @@ fn get_position_values(
     LeftTop -> [
       #("top", top - popcicle_height + target_height |> int.to_string),
       #("left", left - popcicle_width - gap |> int.to_string),
+    ]
+    Custom(x, y) -> [
+      #("top", y |> int.to_string),
+      #("left", x |> int.to_string)
     ]
   }
 

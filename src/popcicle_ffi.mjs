@@ -62,7 +62,7 @@ export function getFirstParentWithAttrib(elem, attrib)
 function getElementBoundingBox(elem, index) {
   try {
     const value = elem.getBoundingClientRect()[index]
-    if(value)
+    if(value !== undefined)
     {
       return new Ok(value)
     } else {
