@@ -9,7 +9,6 @@ import lustre/element/html.{div, style}
 import lustre/event
 import plinth/browser/document
 import plinth/browser/element.{get_attribute, set_attribute} as pl_element
-import plinth/browser/event as pl_event
 
 pub type PrefferedPosition {
   TopLeft
@@ -66,17 +65,14 @@ fn get_element_width(elem: pl_element.Element) -> Result(Int, Nil)
 @external(javascript, "./popcicle_ffi.mjs", "getElementHeight")
 fn get_element_height(elem: pl_element.Element) -> Result(Int, Nil)
 
-@external(javascript, "./popcicle_ffi.mjs", "isMouseOver")
-fn is_mouse_over(event: pl_event.Event(a), elem: pl_element.Element) -> Bool
-
 @external(javascript, "./popcicle_ffi.mjs", "contains")
 pub fn contains(element: pl_element.Element, other: pl_element.Element) -> Bool
 
 @external(javascript, "./popcicle_ffi.mjs", "getFirstParentWithAttrib")
 fn get_first_parent_with_attrib(
-  target: dynamic.Dynamic,
+  target: pl_element.Element,
   attrib: String,
-) -> Result(dynamic.Dynamic, Nil)
+) -> Result(pl_element.Element, Nil)
 
 pub fn default_config() {
   PopcicleConfig(
@@ -103,56 +99,63 @@ pub fn initialize(config: PopcicleConfig, cb: fn() -> Element(a)) {
   let _ = init_popcicle(config)
 
   document.add_event_listener("mousedown", fn(event) {
+    // Loop through all popcicles and close them if the user pressed outside of their bounds
     let _ = {
       use target <- result.try(
         dynamic.field("target", dynamic.dynamic)(dynamic.from(event)),
+      )
+      use target <- result.try(
+        pl_element.cast(target) |> result.replace_error([]),
       )
       list.map(get_popcicles(), fn(popcicle) {
         use popcicle <- result.try(document.query_selector(
           "div[data-popcicle-id=\"" <> int.to_string(popcicle.0) <> "\"]",
         ))
-        use target <- result.try(
-          pl_element.cast(target) |> result.replace_error(Nil),
-        )
+        // Return early if the popcicle contains the target that was pressed
         use <- bool.guard(contains(popcicle, target), Error(Nil))
+        // And if the target that was presed isn't inside the popcicle close it 
         Ok(set_attribute(popcicle, "data-popcicle-open", "0"))
       })
-      Error([])
-    }
-    Nil
-  })
 
-  document.add_event_listener("mousemove", fn(event) {
-    let _ = {
-      list.map(get_popcicles(), fn(popcicle) {
-        use target <- result.try(document.query_selector(
-          "div[data-popcicle-target-id=\"" <> int.to_string(popcicle.0) <> "\"]",
-        ))
-
-        use popcicle <- result.try(document.query_selector(
-          "div[data-popcicle-id=\""
-          <> int.to_string(popcicle.0)
-          <> "\"], data[data-popcicle-show-on=\"hover\"]",
-        ))
-
-        use show_on <- result.try(pl_element.get_attribute(
-          popcicle,
-          "data-popcicle-show-on",
-        ))
-        use <- bool.guard(show_on != "hover", Error(Nil))
-
-        use <- bool.guard(
-          is_mouse_over(event, popcicle) || is_mouse_over(event, target),
-          Error(Nil),
+      // See if the element that was pressed contains a data-popcicle-close attribute
+      // and if it does close any parent which is a popcicle
+      let _ = {
+        use target <- result.try(
+          dynamic.field("target", dynamic.dynamic)(dynamic.from(event)),
         )
-
-        set_attribute(popcicle, "data-popcicle-open", "0")
-        Error(Nil)
-      })
+        use target <- result.try(
+          pl_element.cast(target) |> result.replace_error([]),
+        )
+        use close_value <- result.try(
+          pl_element.get_attribute(target, "data-popcicle-close")
+          |> result.replace_error([]),
+        )
+        use <- bool.guard(close_value != "true", Ok(Nil))
+        use popcicle <- result.try(
+          get_first_parent_with_attrib(target, "data-popcicle-id")
+          |> result.replace_error([]),
+        )
+        Ok(set_attribute(popcicle, "data-popcicle-open", "0"))
+      }
       Error([])
     }
     Nil
   })
+
+  let close_popcicle = fn(event) -> Result(a, List(dynamic.DecodeError)) {
+    use popcicle <- result.try(dynamic.field("target", dynamic.dynamic)(event))
+    use popcicle <- result.try(
+      pl_element.cast(popcicle) |> result.replace_error([]),
+    )
+    use show_on <- result.try(
+      pl_element.get_attribute(popcicle, "data-popcicle-show-on")
+      |> result.replace_error([]),
+    )
+    use <- bool.guard(show_on != "hover", Error([]))
+
+    set_attribute(popcicle, "data-popcicle-open", "0")
+    Error([])
+  }
 
   html.div(
     [],
@@ -165,12 +168,21 @@ pub fn initialize(config: PopcicleConfig, cb: fn() -> Element(a)) {
               attribute("data-popcicle-id", int.to_string(popcicle.0)),
               attribute("data-popcicle-open", "0"),
               attribute("style", "left:0;top:0;"),
+              event.on("mouseleave", close_popcicle),
             ],
             [popcicle.1],
           )
         }),
     ]),
   )
+}
+
+/// Add to any child element of a popcicle and it will close the popcicle when clicked, good for dialog close buttons and such
+pub fn close_on_click(when: Bool) {
+  attribute("data-popcicle-close", case when {
+    True -> "true"
+    False -> "false"
+  })
 }
 
 /// A simple popcicle will add the element in the child parameter where the
@@ -191,11 +203,11 @@ pub fn popcicle(
   let open_popcicle = fn(event) -> Result(a, List(dynamic.DecodeError)) {
     use button <- result.try(dynamic.field("target", dynamic.dynamic)(event))
     use button <- result.try(
-      get_first_parent_with_attrib(button, "data-popcicle-target-id")
-      |> result.replace_error([]),
+      pl_element.cast(button) |> result.replace_error([]),
     )
     use button <- result.try(
-      pl_element.cast(button) |> result.replace_error([]),
+      get_first_parent_with_attrib(button, "data-popcicle-target-id")
+      |> result.replace_error([]),
     )
     use popcicle_target_id <- result.try(
       get_attribute(button, "data-popcicle-target-id")
@@ -327,7 +339,7 @@ fn get_position_values(
     ]
     Custom(x, y) -> [
       #("top", y |> int.to_string),
-      #("left", x |> int.to_string)
+      #("left", x |> int.to_string),
     ]
   }
 
