@@ -85,3 +85,7 @@ export function getElementHeight(elem) {
 export function contains(element, other) {
   return element.contains(other);
 }
+
+export function elementToDynamic(elem) {
+  return elem;
+}

@@ -1,14 +1,17 @@
 import gleam/bool
 import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/int
 import gleam/list
 import gleam/result
 import lustre/attribute.{attribute}
+import lustre/effect
 import lustre/element.{type Element} as _
 import lustre/element/html.{div, style}
 import lustre/event
 import plinth/browser/document
 import plinth/browser/element.{get_attribute, set_attribute} as pl_element
+import plinth/browser/event as pl_event
 
 pub type PrefferedPosition {
   TopLeft
@@ -74,6 +77,9 @@ fn get_first_parent_with_attrib(
   attrib: String,
 ) -> Result(pl_element.Element, Nil)
 
+@external(javascript, "./popcicle_ffi.mjs", "elementToDynamic")
+fn target_to_dynamic(target: Target) -> dynamic.Dynamic
+
 pub fn default_config() {
   PopcicleConfig(
     css: "
@@ -95,113 +101,30 @@ div[data-popcicle-open=\"1\"] {
   )
 }
 
-pub fn initialize(config: PopcicleConfig, cb: fn() -> Element(a)) {
-  let _ = init_popcicle(config)
+pub type Target
 
-  document.add_event_listener("mousedown", fn(event) {
-    // Loop through all popcicles and close them if the user pressed outside of their bounds
-    let _ = {
-      use target <- result.try(
-        dynamic.field("target", dynamic.dynamic)(dynamic.from(event)),
-      )
-      use target <- result.try(
-        pl_element.cast(target) |> result.replace_error([]),
-      )
-      list.map(get_popcicles(), fn(popcicle) {
-        use popcicle <- result.try(document.query_selector(
-          "div[data-popcicle-id=\"" <> int.to_string(popcicle.0) <> "\"]",
-        ))
-        // Return early if the popcicle contains the target that was pressed
-        use <- bool.guard(contains(popcicle, target), Error(Nil))
-        // And if the target that was presed isn't inside the popcicle close it 
-        Ok(set_attribute(popcicle, "data-popcicle-open", "0"))
-      })
+pub type PopcicleMessage {
+  UserOpenedPopcicle(dynamic.Dynamic, ShowType, PrefferedPosition)
+  UserClosedPopcicle(dynamic.Dynamic)
+}
 
-      // See if the element that was pressed contains a data-popcicle-close attribute
-      // and if it does close any parent which is a popcicle
-      let _ = {
-        use target <- result.try(
-          dynamic.field("target", dynamic.dynamic)(dynamic.from(event)),
-        )
-        use target <- result.try(
-          pl_element.cast(target) |> result.replace_error([]),
-        )
-        use close_value <- result.try(
-          pl_element.get_attribute(target, "data-popcicle-close")
-          |> result.replace_error([]),
-        )
-        use <- bool.guard(close_value != "true", Ok(Nil))
-        use popcicle <- result.try(
-          get_first_parent_with_attrib(target, "data-popcicle-id")
-          |> result.replace_error([]),
-        )
-        Ok(set_attribute(popcicle, "data-popcicle-open", "0"))
-      }
-      Error([])
-    }
-    Nil
-  })
-
-  let close_popcicle = fn(event) -> Result(a, List(dynamic.DecodeError)) {
-    use popcicle <- result.try(dynamic.field("target", dynamic.dynamic)(event))
-    use popcicle <- result.try(
-      pl_element.cast(popcicle) |> result.replace_error([]),
-    )
-    use show_on <- result.try(
-      pl_element.get_attribute(popcicle, "data-popcicle-show-on")
-      |> result.replace_error([]),
-    )
-    use <- bool.guard(show_on != "hover", Error([]))
-
-    set_attribute(popcicle, "data-popcicle-open", "0")
-    Error([])
+pub fn handle_popcicle_message(msg: PopcicleMessage) {
+  case msg {
+    UserOpenedPopcicle(target, show_on, position) ->
+      handle_open_popcicle(target, show_on, position)
+    UserClosedPopcicle(target) -> handle_close_popcicle(target)
   }
-
-  html.div(
-    [],
-    list.flatten([
-      [style([], config.css), cb()],
-      get_popcicles()
-        |> list.map(fn(popcicle) {
-          div(
-            [
-              attribute("data-popcicle-id", int.to_string(popcicle.0)),
-              attribute("data-popcicle-open", "0"),
-              attribute("style", "left:0;top:0;"),
-              event.on("mouseleave", close_popcicle),
-            ],
-            [popcicle.1],
-          )
-        }),
-    ]),
-  )
 }
 
-/// Add to any child element of a popcicle and it will close the popcicle when clicked, good for dialog close buttons and such
-pub fn close_on_click(when: Bool) {
-  attribute("data-popcicle-close", case when {
-    True -> "true"
-    False -> "false"
-  })
-}
-
-/// A simple popcicle will add the element in the child parameter where the
-/// function is called. Then when that element is pressed (show_on=popcicle.Click) or
-/// hovered (show_on=popcicle.Hover), it will show the popcicle as a popover
-/// positioned by the position parameter. By default the popcicle and it's
-/// button comes completely unstyled and you *can* use it that way however, it
-/// is highly recommened you create your own styled functions. If you don't
-/// want to do that then there is a prestyled component based on shadcn/ui that
-/// you can simply copy into your project: [Dropdown Menu](https://github.com/dinkelspiel/popcicle/blob/master/examples/dropdown_menu.gleam)
-///
-pub fn popcicle(
-  child: Element(a),
-  position: PrefferedPosition,
-  popcicle: Element(a),
+pub fn handle_open_popcicle(
+  target: dynamic.Dynamic,
   show_on: ShowType,
-) {
-  let open_popcicle = fn(event) -> Result(a, List(dynamic.DecodeError)) {
-    use button <- result.try(dynamic.field("target", dynamic.dynamic)(event))
+  position: PrefferedPosition,
+) -> effect.Effect(a) {
+  use _, _ <- effect.before_paint
+
+  let _ = {
+    let button = target
     use button <- result.try(
       pl_element.cast(button) |> result.replace_error([]),
     )
@@ -239,16 +162,141 @@ pub fn popcicle(
       Hover -> "hover"
     })
 
-    Error([])
+    Ok(Nil)
   }
 
+  Nil
+}
+
+pub fn handle_close_popcicle(target: dynamic.Dynamic) -> effect.Effect(a) {
+  use _, _ <- effect.before_paint
+
+  let _ = {
+    let popcicle = target
+    use popcicle <- result.try(
+      pl_element.cast(popcicle) |> result.replace_error([]),
+    )
+    use show_on <- result.try(
+      pl_element.get_attribute(popcicle, "data-popcicle-show-on")
+      |> result.replace_error([]),
+    )
+    use <- bool.guard(show_on != "hover", Error([]))
+
+    set_attribute(popcicle, "data-popcicle-open", "0")
+    Ok(Nil)
+  }
+
+  Nil
+}
+
+pub fn initialize(
+  config: PopcicleConfig,
+  open_popcicle_message: fn(dynamic.Dynamic) -> a,
+  cb: fn() -> Element(a),
+) {
+  let _ = init_popcicle(config)
+
+  document.add_event_listener("mousedown", fn(event) {
+    // Loop through all popcicles and close them if the user pressed outside of their bounds
+    let _ = {
+      let target = pl_event.target(event)
+      use target <- result.try(
+        pl_element.cast(target) |> result.replace_error([]),
+      )
+      list.map(get_popcicles(), fn(popcicle) {
+        use popcicle <- result.try(document.query_selector(
+          "div[data-popcicle-id=\"" <> int.to_string(popcicle.0) <> "\"]",
+        ))
+        // Return early if the popcicle contains the target that was pressed
+        use <- bool.guard(contains(popcicle, target), Error(Nil))
+        // And if the target that was presed isn't inside the popcicle close it 
+        Ok(set_attribute(popcicle, "data-popcicle-open", "0"))
+      })
+
+      // See if the element that was pressed contains a data-popcicle-close attribute
+      // and if it does close any parent which is a popcicle
+      let _ = {
+        let target = pl_event.target(event)
+        use target <- result.try(
+          pl_element.cast(target) |> result.replace_error([]),
+        )
+        use close_value <- result.try(
+          pl_element.get_attribute(target, "data-popcicle-close")
+          |> result.replace_error([]),
+        )
+        use <- bool.guard(close_value != "true", Ok(Nil))
+        use popcicle <- result.try(
+          get_first_parent_with_attrib(target, "data-popcicle-id")
+          |> result.replace_error([]),
+        )
+        Ok(set_attribute(popcicle, "data-popcicle-open", "0"))
+      }
+      Error([])
+    }
+    Nil
+  })
+
+  html.div(
+    [],
+    list.flatten([
+      [style([], config.css), cb()],
+      get_popcicles()
+        |> list.map(fn(popcicle) {
+          div(
+            [
+              attribute("data-popcicle-id", int.to_string(popcicle.0)),
+              attribute("data-popcicle-open", "0"),
+              attribute("style", "left:0;top:0;"),
+              event.on(
+                "mouseleave",
+                popcicle_message_decoder(open_popcicle_message),
+              ),
+            ],
+            [popcicle.1],
+          )
+        }),
+    ]),
+  )
+}
+
+/// Add to any child element of a popcicle and it will close the popcicle when clicked, good for dialog close buttons and such
+pub fn close_on_click(when: Bool) {
+  attribute("data-popcicle-close", case when {
+    True -> "true"
+    False -> "false"
+  })
+}
+
+fn popcicle_message_decoder(message: fn(dynamic.Dynamic) -> a) {
+  use target <- decode.field("target", decode.dynamic)
+  decode.success(message(target))
+}
+
+/// A simple popcicle will add the element in the child parameter where the
+/// function is called. Then when that element is pressed (show_on=popcicle.Click) or
+/// hovered (show_on=popcicle.Hover), it will show the popcicle as a popover
+/// positioned by the position parameter. By default the popcicle and it's
+/// button comes completely unstyled and you *can* use it that way however, it
+/// is highly recommened you create your own styled functions. If you don't
+/// want to do that then there is a prestyled component based on shadcn/ui that
+/// you can simply copy into your project: [Dropdown Menu](https://github.com/dinkelspiel/popcicle/blob/master/examples/dropdown_menu.gleam)
+///
+pub fn popcicle(
+  child: Element(a),
+  position: PrefferedPosition,
+  popcicle: Element(a),
+  show_on: ShowType,
+  open_popcicle_message: fn(dynamic.Dynamic) -> a,
+) {
   let id = register_popcicle(popcicle)
   div(
     [
       attribute("data-popcicle-target-id", int.to_string(id)),
       case show_on {
-        Click -> event.on("click", open_popcicle)
-        Hover -> event.on("mouseover", open_popcicle)
+        Click ->
+          event.on("click", popcicle_message_decoder(open_popcicle_message))
+        Hover ->
+          event.on("mouseover", popcicle_message_decoder(open_popcicle_message))
       },
     ],
     [child],

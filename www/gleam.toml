@@ -1,5 +1,6 @@
 name = "www"
 version = "1.0.0"
+target = "javascript"
 
 # Fill out these fields if you intend to generate HTML documentation or publish
 # your project to the Hex package manager.
@@ -14,9 +15,9 @@ version = "1.0.0"
 
 [dependencies]
 gleam_stdlib = ">= 0.34.0 and < 2.0.0"
-lustre = ">= 4.6.3 and < 5.0.0"
-lustre_dev_tools = ">= 1.6.5 and < 2.0.0"
-popcicle = ">= 1.1 and < 2.0.0"
+lustre = ">= 5.0.0 and < 6.0.0"
+lustre_dev_tools = ">= 2.0.0 and < 3.0.0"
+popcicle = { path = "../" }
 lucide_lustre = ">= 2.0.0 and < 3.0.0"
 
 [dev-dependencies]

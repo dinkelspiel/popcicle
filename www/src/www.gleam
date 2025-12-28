@@ -2,14 +2,16 @@ import gleam/int
 import lucide_lustre
 import lustre
 import lustre/attribute.{class, href}
+import lustre/effect
 import lustre/element.{type Element}
 import lustre/element/html.{a, button, div, h1, p, span, text}
 import lustre/event
+import message.{type Msg, Decr, Incr}
 import popcicle
 import popcicle/components/dropdown_menu
 
 pub fn main() {
-  let app = lustre.simple(init, update, view)
+  let app = lustre.application(init, update, view)
   let assert Ok(_) = lustre.start(app, "#app", 0)
 
   Nil
@@ -18,22 +20,24 @@ pub fn main() {
 type Model =
   Int
 
-fn init(initial_count: Int) -> Model {
-  case initial_count < 0 {
-    True -> 0
-    False -> initial_count
-  }
+fn init(initial_count: Int) -> #(Model, effect.Effect(Msg)) {
+  #(
+    case initial_count < 0 {
+      True -> 0
+      False -> initial_count
+    },
+    effect.none(),
+  )
 }
 
-pub opaque type Msg {
-  Incr
-  Decr
-}
-
-fn update(model: Model, msg: Msg) -> Model {
+fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   case msg {
-    Incr -> model + 1
-    Decr -> model - 1
+    Incr -> #(model + 1, effect.none())
+    Decr -> #(model - 1, effect.none())
+    message.PopcicleMessage(msg) -> #(
+      model,
+      popcicle.handle_popcicle_message(msg),
+    )
   }
 }
 
@@ -52,7 +56,11 @@ fn dark_button_styles() {
 }
 
 fn view(model: Model) -> Element(Msg) {
-  use <- popcicle.initialize(popcicle.default_config())
+  use <- popcicle.initialize(popcicle.default_config(), fn(target) {
+    dropdown_menu.wrap_popcicle_type_in_user_type(popcicle.UserClosedPopcicle(
+      target,
+    ))
+  })
 
   div([class("text-zinc-900 w-[60ch] mx-auto mt-48")], [
     div([class("flex flex-col gap-3")], [

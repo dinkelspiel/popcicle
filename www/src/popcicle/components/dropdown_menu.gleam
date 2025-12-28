@@ -2,13 +2,18 @@ import gleam/list
 import lustre/attribute.{type Attribute, class}
 import lustre/element.{type Element}
 import lustre/element/html.{div, span}
+import message
 import popcicle.{type PrefferedPosition}
 
+pub fn wrap_popcicle_type_in_user_type(a: popcicle.PopcicleMessage) {
+  message.PopcicleMessage(a)
+}
+
 pub fn dropdown_menu(
-  child: Element(a),
+  child: Element(message.Msg),
   position: PrefferedPosition,
-  attributes: List(Attribute(a)),
-  children: List(Element(a)),
+  attributes: List(Attribute(message.Msg)),
+  children: List(Element(message.Msg)),
   show_on: popcicle.ShowType,
 ) {
   popcicle.popcicle(
@@ -26,6 +31,13 @@ pub fn dropdown_menu(
       children,
     ),
     show_on,
+    fn(target) {
+      wrap_popcicle_type_in_user_type(popcicle.UserOpenedPopcicle(
+        target,
+        show_on,
+        position,
+      ))
+    },
   )
 }
 
